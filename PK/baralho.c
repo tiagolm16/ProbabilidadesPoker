@@ -1,115 +1,30 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include "baralho.h"
 
-// ==========================
-// Funções de leitura e impressão
-// ==========================
-void imprimirCarta(Carta c) {
-    char *nomeValor;
-    switch (c.valor) {
-        case 11: nomeValor = "J"; break;
-        case 12: nomeValor = "Q"; break;
-        case 13: nomeValor = "K"; break;
-        case 14: nomeValor = "A"; break;
-        default:
-            printf("%d%c", c.valor, c.naipe);
-            return;
-    }
-    printf("%s%c", nomeValor, c.naipe);
-}
-
-void imprimirMao(Mao m) {
-    printf("Sua mão: ");
-    for (int i = 0; i < 2; i++) {
-        imprimirCarta(m.cartas[i]);
-        printf(" ");
-    }
-    printf("\n");
-}
-
-Carta lerCarta() {
-    Carta c;
-    char valorEntrada[3];
-    printf("Digite a carta (ex: A C, 10 O, J P): ");
-    scanf("%s %c", valorEntrada, &c.naipe);
-
-    if (valorEntrada[0] == 'A')
-        c.valor = 14;
-    else if (valorEntrada[0] == 'K')
-        c.valor = 13;
-    else if (valorEntrada[0] == 'Q')
-        c.valor = 12;
-    else if (valorEntrada[0] == 'J')
-        c.valor = 11;
-    else
-        c.valor = atoi(valorEntrada);
-
-    return c;
-}
-
-void lerMao(Mao *m) {
-    printf("Digite suas duas cartas:\n");
-    for (int i = 0; i < 2; i++) {
-        m->cartas[i] = lerCarta();
+static int indiceNaipe(char naipe) {
+    switch (naipe) {
+        case 'C': return 0;
+        case 'O': return 1;
+        case 'P': return 2;
+        case 'E': return 3;
+        default: return -1;
     }
 }
 
-void lerMesa(Mesa *m) {
-    printf("Digite as cartas da mesa (até 5 no total):\n");
-    for (int i = 0; i < 5; i++) {
-        printf("Carta %d: ", i + 1);
-        m->cartas[i] = lerCarta();
-        m->numCartas++;
-
-        printf("Mesa atual: ");
-        for (int j = 0; j <= i; j++) {
-            imprimirCarta(m->cartas[j]);
-            printf(" ");
-        }
-        printf("\n");
-
-        if (i < 4) {
-            char opcao;
-            printf("Deseja adicionar mais uma carta à mesa? (s/n): ");
-            scanf(" %c", &opcao);
-            if (opcao != 's' && opcao != 'S')
-                break;
-        }
-    }
-}
-
-void imprimirMesa(Mesa m) {
-    printf("Mesa: ");
-    for (int i = 0; i < m.numCartas; i++) {
-        imprimirCarta(m.cartas[i]);
-        printf(" ");
-    }
-    printf("\n");
-}
-
-// ==========================
-// Avaliação de mão
-// ==========================
 int avaliarMao(Mao jogador, Mesa mesa) {
     int contagemValor[15] = {0};
     int contagemNaipe[4] = {0};
-    char naipes[] = {'C', 'O', 'P', 'E'};
 
     for (int i = 0; i < 2; i++) {
         contagemValor[jogador.cartas[i].valor]++;
-        for (int n = 0; n < 4; n++)
-            if (jogador.cartas[i].naipe == naipes[n])
-                contagemNaipe[n]++;
+        int idx = indiceNaipe(jogador.cartas[i].naipe);
+        if (idx >= 0) contagemNaipe[idx]++;
     }
 
     for (int i = 0; i < mesa.numCartas; i++) {
         contagemValor[mesa.cartas[i].valor]++;
-        for (int n = 0; n < 4; n++)
-            if (mesa.cartas[i].naipe == naipes[n])
-                contagemNaipe[n]++;
+        int idx = indiceNaipe(mesa.cartas[i].naipe);
+        if (idx >= 0) contagemNaipe[idx]++;
     }
 
     int pares = 0, trincas = 0, quadra = 0;
@@ -163,9 +78,6 @@ const char* nomeDaMao(int valor) {
     }
 }
 
-// ==========================
-// Simulação Monte Carlo otimizada
-// ==========================
 void inicializarBaralho(Carta baralho[52]) {
     char naipes[] = {'C', 'O', 'P', 'E'};
     int index = 0;
@@ -186,17 +98,21 @@ int compararMaos(Mao jogador1, Mao jogador2, Mesa mesa) {
     else return 0;
 }
 
-int simularProbabilidade(Mao jogador, Mesa mesa, int simulacoes, Carta baralho[52]) {
-    srand(time(NULL));
+Probabilidades simularProbabilidade(Mao jogador, Mesa mesa, int simulacoes,
+                                    Carta baralho[52],
+                                    ProgressoCallback callback) {
     int vitorias = 0, derrotas = 0, empates = 0;
 
-    for (int s = 0; s < simulacoes; s++) {
-        // Cópia do baralho base
-        Carta tempBaralho[52];
-        for (int i = 0; i < 52; i++) tempBaralho[i] = baralho[i];
-        int totalCartas = 52;
+    int passo = simulacoes / 100;
+    if (passo < 1) passo = 1;
 
-        // Remove cartas conhecidas
+    if (callback) callback(0, simulacoes);
+
+    for (int s = 0; s < simulacoes; s++) {
+        Carta tempBaralho[52];
+        int totalCartas = 52;
+        for (int i = 0; i < 52; i++) tempBaralho[i] = baralho[i];
+
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < totalCartas; j++) {
                 if (tempBaralho[j].valor == jogador.cartas[i].valor &&
@@ -217,7 +133,6 @@ int simularProbabilidade(Mao jogador, Mesa mesa, int simulacoes, Carta baralho[5
             }
         }
 
-        // Sorteia 2 cartas para o oponente
         Mao oponente;
         for (int i = 0; i < 2; i++) {
             int r = rand() % totalCartas;
@@ -225,7 +140,6 @@ int simularProbabilidade(Mao jogador, Mesa mesa, int simulacoes, Carta baralho[5
             tempBaralho[r] = tempBaralho[--totalCartas];
         }
 
-        // Completa a mesa (se necessário)
         Mesa mesaCompleta = mesa;
         for (int i = mesa.numCartas; i < 5; i++) {
             int r = rand() % totalCartas;
@@ -238,13 +152,14 @@ int simularProbabilidade(Mao jogador, Mesa mesa, int simulacoes, Carta baralho[5
         if (resultado == 1) vitorias++;
         else if (resultado == -1) derrotas++;
         else empates++;
+
+        if (callback && ((s + 1) % passo == 0 || s + 1 == simulacoes))
+            callback(s + 1, simulacoes);
     }
 
-    printf("\n=== RESULTADO DAS SIMULAÇÕES ===\n");
-    printf("Simulações: %d\n", simulacoes);
-    printf("Vitórias: %.2f%%\n", 100.0 * vitorias / simulacoes);
-    printf("Empates: %.2f%%\n", 100.0 * empates / simulacoes);
-    printf("Derrotas: %.2f%%\n", 100.0 * derrotas / simulacoes);
-
-    return 0;
+    Probabilidades p;
+    p.vitoria = 100.0 * vitorias / simulacoes;
+    p.empate = 100.0 * empates / simulacoes;
+    p.derrota = 100.0 * derrotas / simulacoes;
+    return p;
 }

@@ -15,21 +15,21 @@ typedef struct {
     int numCartas; // 0 a 5 (flop, turn, river)
 } Mesa;
 
-// Funções gerais
-void imprimirCarta(Carta c);
-void imprimirMao(Mao m);
-Carta lerCarta();
-void lerMao(Mao *m);
-void lerMesa(Mesa *m);
-void imprimirMesa(Mesa m);
+typedef struct {
+    double vitoria;
+    double empate;
+    double derrota;
+} Probabilidades;
 
-// Avaliação
+typedef void (*ProgressoCallback)(int atual, int total);
+
 int avaliarMao(Mao jogador, Mesa mesa);
 const char* nomeDaMao(int valor);
 
-// Simulação
 void inicializarBaralho(Carta baralho[52]);
 int compararMaos(Mao jogador1, Mao jogador2, Mesa mesa);
-int simularProbabilidade(Mao jogador, Mesa mesa, int simulacoes, Carta baralho[52]);
+Probabilidades simularProbabilidade(Mao jogador, Mesa mesa, int simulacoes,
+                                    Carta baralho[52],
+                                    ProgressoCallback callback);
 
 #endif
