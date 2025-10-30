@@ -1,8 +1,6 @@
 # ProbabilidadesPoker 🎲
 
-Oi! Eu sou um estudante de Engenharia de Software de 18 anos e esse é meu primeiro
-projeto "sério" de pôquer com probabilidade real. A ideia foi juntar duas coisas
-que eu curto muito: cartas e programação. Com ele, dá pra ver como as chances de
+Para esse projeto, a ideia foi juntar duas coisas que eu gosto muito: poker e programação. Com ele, dá pra ver como as chances de
 vitória mudam conforme as cartas aparecem na mesa.
 
 ## O que o simulador faz?
@@ -18,7 +16,7 @@ mão, para a mesa e para as probabilidades. Também rola uma barra de progresso
 pra mostrar que as simulações Monte Carlo estão trabalhando por você.
 
 ## Mas o que é simulação Monte Carlo?
-É um nome chique para "testar várias possibilidades aleatórias e ver o que
+É um termo para "testar várias possibilidades aleatórias e ver o que
 acontece". No nosso caso, o programa embaralha as cartas que ainda não foram
 reveladas e joga várias partidas simuladas. Contando quantas vezes você ganha,
 empata ou perde, dá pra estimar as probabilidades reais da vida.
